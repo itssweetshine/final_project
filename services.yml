@@ -1,0 +1,88 @@
+
+
+docker run -it \
+  -e POSTGRES_USER="root" \
+  -e POSTGRES_PASSWORD="root" \
+  -e POSTGRES_DB="organograms" \
+  -v $(pwd)/datasets:/var/lib/postgresql/data \
+  -p 5432:5432 \
+  --network=pg-network \
+  --name pg-db \
+  postgres:13
+
+pgcli -h localhost -p 5432 -u root -d organograms
+
+docker run -it \
+  -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
+  -e PGADMIN_DEFAULT_PASSWORD="root" \
+  -p 8080:80 \
+  --network=pg-network \
+  --name pgadmin4 \
+  dpage/pgadmin4
+
+docker network create pg-network
+
+jupyter nbconvert --to=script upload-data.ipynb
+
+URL="https://s3-eu-west-1.amazonaws.com/datagovuk-production-ckan-organogram/organogram-crown-prosecution-service/resources/2023-12-06T13-24-23Z-2023-03-31-organogram-junior.csv"
+
+python3 ingest-data.py \
+  --user=root \
+  --password=root \
+  --host=localhost \
+  --port=5432 \
+  --db=organograms \
+  --table_name=2023-03-31 \
+  --url=${URL}
+
+docker build -t data_ingest:v001 .
+
+docker run -it \
+  --network=pg-network \
+  data_ingest:v001 \
+    --user=root \
+    --password=root \
+    --host=pg-db \
+    --port=5432 \
+    --db=organograms \
+    --table_name=test2 \
+    --url=${URL}
+
+docker-compose up
+
+docker-compose down
+
+docker-compose up -d
+
+export GOOGLE_CREDENTIALS='/home/itssweetshine/project/terraform/keys/my-creds.json'
+echo $GOOGLE_CREDENTIALS
+
+terraform init
+
+terraform plan
+
+terraform apply
+
+terraform destroy
+
+unset GOOGLE_CREDENTIALS
+
+ssh-keygen -t rsa -f gcp -C itssweetshine -b 2048
+
+cat gcp.pub
+
+ssh -i ~/project/.ssh/gcp itssweetshine@34.88.250.48
+
+urls = [
+        'https://s3-eu-west-1.amazonaws.com/datagovuk-production-ckan-organogram/organogram-crown-prosecution-service/resources/2023-12-06T13-24-23Z-2023-03-31-organogram-junior.csv'
+        'https://s3-eu-west-1.amazonaws.com/datagovuk-production-ckan-organogram/organogram-department-for-levelling-up-housing-and-communities/resources/2023-12-18T15-08-44Z-2023-06-30-organogram-junior.csv'
+        'https://s3-eu-west-1.amazonaws.com/datagovuk-production-ckan-organogram/organogram-crown-prosecution-service/resources/2023-12-04T13-32-10Z-2022-03-31-organogram-junior.csv'
+        'https://s3-eu-west-1.amazonaws.com/datagovuk-production-ckan-organogram/organogram-crown-prosecution-service/resources/2023-12-04T11-19-54Z-2022-09-30-organogram-junior.csv'
+        'https://s3-eu-west-1.amazonaws.com/datagovuk-production-ckan-organogram/organogram-department-for-communities-and-local-government/resources/2023-04-17T13-10-20Z-2022-12-31-organogram-junior.csv'
+        'https://s3-eu-west-1.amazonaws.com/datagovuk-production-ckan-organogram/organogram-department-for-communities-and-local-government/resources/2022-09-26T16-48-50Z-2022-06-30-organogram-junior.csv'
+        'https://s3-eu-west-1.amazonaws.com/datagovuk-production-ckan-organogram/organogram-crown-prosecution-service/resources/2021-07-22T14-40-16Z-2021-03-31-organogram-junior.csv'
+        'https://s3-eu-west-1.amazonaws.com/datagovuk-production-ckan-organogram/organogram-crown-prosecution-service/resources/2022-04-04T13-43-11Z-2021-09-30-organogram-junior.csv'
+        'https://s3-eu-west-1.amazonaws.com/datagovuk-production-ckan-organogram/organogram-department-for-communities-and-local-government/resources/2022-02-01T12-29-33Z-2021-12-31-organogram-junior.csv'
+        'https://s3-eu-west-1.amazonaws.com/datagovuk-production-ckan-organogram/organogram-crown-prosecution-service/resources/2021-03-26T13-52-24Z-2020-03-31-organogram-junior.csv'
+
+]
